@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đồ Án Đề Tài 22: Tối Ưu Hóa Tồn Kho</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a', // blue-900
+                        secondary: '#3b82f6', // blue-500
+                        accent: '#10b981', // emerald-500
+                        background: '#f8fafc', // slate-50
+                        surface: '#ffffff',
+                        textMain: '#0f172a', // slate-900
+                        textMuted: '#64748b' // slate-500
+                    },
+                    fontFamily: {
+                        sans: ['Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* <!-- Chosen Palette: Trust Blue & Emerald Data (Professional, Analytical, Calm) --> */
+        
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            scroll-behavior: smooth;
+        }
+
+        /* Mandatory Chart Container Styling for responsiveness and boundary control */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Tab animation */
+        .tab-content { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Card Hover Effects */
+        .hover-card { transition: all 0.3s ease; }
+        .hover-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Application Structure Plan: 
+    1. Header/Hero: Establishes context, project title, and core objectives.
+    2. Context & Biz Value Section: Uses a conceptual chart to explain WHY this project matters (Trade-off between holding cost and stockout cost).
+    3. Team Roles Section: Side-by-side comparison of Member A and B's responsibilities to clarify division of labor.
+    4. Interactive Roadmap: A tabbed interface allowing users to explore the 12-week plan phase-by-phase without overwhelming them with text.
+    5. Skill Matrix: A radar chart visually comparing the technical and domain skills acquired by both members.
+    6. Portfolio/CV Section: Actionable takeaways for their resumes.
+    This structure transforms a static report into an interactive project management and portfolio presentation tool. -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. Unicode used for icons. -->
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-surface shadow-sm border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center gap-2 font-bold text-xl text-primary">
+                    <span class="text-2xl">📦</span> RetailForecaster
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#tong-quan" class="text-slate-600 hover:text-primary transition-colors">Tổng quan</a>
+                    <a href="#phan-cong" class="text-slate-600 hover:text-primary transition-colors">Vai trò</a>
+                    <a href="#lo-trinh" class="text-slate-600 hover:text-primary transition-colors">Lộ trình</a>
+                    <a href="#kien-thuc" class="text-slate-600 hover:text-primary transition-colors">Kiến thức</a>
+                    <a href="#cv" class="text-slate-600 hover:text-primary transition-colors">CV Định hướng</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="bg-primary text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+                Dự Báo Nhu Cầu Chuỗi Bán Lẻ & Tối Ưu Tồn Kho
+            </h1>
+            <p class="text-xl text-blue-100 max-w-3xl mx-auto mb-8">
+                Đồ Án Học Phần: Nhập môn Phân tích Dữ liệu và Học sâu (Đề tài 22)
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <div class="bg-blue-800/50 rounded-full px-6 py-2 text-sm border border-blue-400">⏱️ Thời lượng: 12 Tuần</div>
+                <div class="bg-blue-800/50 rounded-full px-6 py-2 text-sm border border-blue-400">👥 Đội ngũ: 2 Thành viên</div>
+                <div class="bg-blue-800/50 rounded-full px-6 py-2 text-sm border border-blue-400">🎯 Mục tiêu: Multi-step Forecasting & ROP</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20">
+
+        <!-- Section 1: Context & Objective -->
+        <section id="tong-quan" class="scroll-mt-20">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-textMain mb-4">Bối Cảnh & Mục Tiêu Nghiệp Vụ</h2>
+                <p class="text-textMuted max-w-3xl mx-auto">
+                    Việc dự báo sai lệch dẫn đến hai kịch bản tốn kém: <b>Cháy hàng (Out-of-stock)</b> làm mất doanh thu, hoặc <b>Tồn kho quá mức (Over-stock)</b> làm đọng vốn. Đồ án giải quyết bài toán cân bằng này bằng AI.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-10 items-center">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center gap-2"><span>📉</span> Bài toán Tối ưu hóa Chi phí</h3>
+                    <p class="text-slate-600 mb-6 text-sm">
+                        Biểu đồ minh họa khái niệm điểm đặt hàng lại (Reorder Point) tối ưu. AI giúp chúng ta dự báo chính xác nhu cầu để tìm ra điểm hội tụ có tổng chi phí thấp nhất.
+                    </p>
+                    <!-- Visualization & Content Choices: 
+                    Report Info: Business context of inventory costs.
+                    Goal: Inform/Contextualize.
+                    Viz Method: Line Chart showing Cost Trade-offs.
+                    Library: Chart.js 
+                    NO SVG/Mermaid. -->
+                    <div class="chart-container">
+                        <canvas id="costTradeoffChart"></canvas>
+                    </div>
+                </div>
+                <div class="space-y-6">
+                    <div class="flex gap-4 items-start bg-emerald-50 p-5 rounded-xl border border-emerald-100">
+                        <div class="text-3xl">⚙️</div>
+                        <div>
+                            <h4 class="font-bold text-emerald-900">Mục tiêu Kỹ thuật</h4>
+                            <p class="text-emerald-800 text-sm mt-1">Xây dựng mô hình dự báo chuỗi thời gian đa bước (Multi-step ahead) dự đoán lượng cầu $y_{t+1}...y_{t+k}$ dựa trên lịch sử bán hàng và biến ngoại sinh.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 items-start bg-blue-50 p-5 rounded-xl border border-blue-100">
+                        <div class="text-3xl">💼</div>
+                        <div>
+                            <h4 class="font-bold text-blue-900">Mục tiêu Nghiệp vụ</h4>
+                            <p class="text-blue-800 text-sm mt-1">Sử dụng dự báo để tự động hóa tính toán Điểm đặt hàng lại (ROP) và Mức tồn kho an toàn (Safety Stock).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Team Roles -->
+        <section id="phan-cong" class="scroll-mt-20 bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-textMain mb-4">Phân Chia Vai Trò & Nhiệm Vụ</h2>
+                <p class="text-textMuted max-w-3xl mx-auto">
+                    Hai hướng chuyên môn hóa sâu sắc giúp tạo ra hai hồ sơ năng lực (Portfolio) bổ khuyết cho nhau, chuẩn bị tốt nhất cho thị trường lao động.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Member A -->
+                <div class="hover-card bg-slate-50 rounded-2xl p-8 border-t-4 border-secondary">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="bg-secondary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Thành viên A</span>
+                            <h3 class="text-2xl font-bold mt-2 text-slate-800">Data Engineer / SC Analyst</h3>
+                        </div>
+                        <div class="text-4xl">🧑‍💻</div>
+                    </div>
+                    <ul class="space-y-3 text-slate-600 mb-6 text-sm">
+                        <li class="flex items-start gap-2"><span>🔹</span> <span>Xử lý dữ liệu lớn, làm sạch và thiết lập Pipeline (Pandas/Numpy).</span></li>
+                        <li class="flex items-start gap-2"><span>🔹</span> <span>Feature Engineering chuyên sâu cho Time-Series.</span></li>
+                        <li class="flex items-start gap-2"><span>🔹</span> <span>Xây dựng mô hình Baseline và Machine Learning (LightGBM).</span></li>
+                        <li class="flex items-start gap-2"><span>🔹</span> <span>Thiết kế Business Logic (ROP & Safety Stock).</span></li>
+                    </ul>
+                </div>
+
+                <!-- Member B -->
+                <div class="hover-card bg-slate-50 rounded-2xl p-8 border-t-4 border-accent">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="bg-accent text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Thành viên B</span>
+                            <h3 class="text-2xl font-bold mt-2 text-slate-800">Deep Learning Engineer</h3>
+                        </div>
+                        <div class="text-4xl">🧠</div>
+                    </div>
+                    <ul class="space-y-3 text-slate-600 mb-6 text-sm">
+                        <li class="flex items-start gap-2"><span>🔸</span> <span>Thiết kế cấu trúc Tensor 3D cho dữ liệu chuỗi.</span></li>
+                        <li class="flex items-start gap-2"><span>🔸</span> <span>Huấn luyện mô hình LSTM/Transformer trên PyTorch & GPU.</span></li>
+                        <li class="flex items-start gap-2"><span>🔸</span> <span>Tối ưu hóa Hyperparameters và chống Overfitting.</span></li>
+                        <li class="flex items-start gap-2"><span>🔸</span> <span>Lượng tử hóa mô hình (Model Quantization) để tăng tốc độ.</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: 12-Week Roadmap (Interactive) -->
+        <section id="lo-trinh" class="scroll-mt-20">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-textMain mb-4">Lộ Trình Triển Khai (12 Tuần)</h2>
+                <p class="text-textMuted max-w-3xl mx-auto">
+                    Kế hoạch chi tiết từ lúc nhận dữ liệu thô đến khi ra báo cáo và ứng dụng thực tế. Nhấp vào từng giai đoạn để xem chi tiết công việc.
+                </p>
+            </div>
+
+            <!-- Interactive Roadmap Component -->
+            <!-- Visualization & Content Choices: 
+            Report Info: 6 Phases of the project.
+            Goal: Organize/Process Flow.
+            Viz Method: Custom Interactive Tabs.
+            Library/Method: Vanilla JS + Tailwind. NO SVG. -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="flex flex-nowrap overflow-x-auto bg-slate-100 border-b border-slate-200" id="roadmapTabs">
+                    <!-- Tabs injected by JS -->
+                </div>
+                
+                <div class="p-8" id="roadmapContent">
+                    <!-- Content injected by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Knowledge Matrix -->
+        <section id="kien-thuc" class="scroll-mt-20">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-textMain mb-4">Ma Trận Kiến Thức Thu Nhận</h2>
+                <p class="text-textMuted max-w-3xl mx-auto">
+                    So sánh sự phát triển kỹ năng giữa hai thành viên dựa trên tài liệu học thuật và kỹ năng công nghiệp thực tế.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-10 items-center">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-xl font-semibold mb-4 text-center">So Sánh Kỹ Năng Tương Đối</h3>
+                    <!-- Visualization & Content Choices: 
+                    Report Info: Skill division between member A and B.
+                    Goal: Compare relationships.
+                    Viz Method: Radar Chart.
+                    Library: Chart.js. -->
+                    <div class="chart-container">
+                        <canvas id="skillsRadarChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-800 text-white p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-xl font-bold mb-4 border-b border-slate-600 pb-2">Từ Cơ Bản Đến Nâng Cao</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-emerald-400 font-semibold">Cơ bản (Slide Môn Học)</h4>
+                            <p class="text-sm text-slate-300 mt-1">Pandas DataFrame, Xử lý Missing Values, Boxplot Outliers, Thống kê mô tả (Mean, Median).</p>
+                        </div>
+                        <div>
+                            <h4 class="text-blue-400 font-semibold">Trung cấp (Ứng dụng)</h4>
+                            <p class="text-sm text-slate-300 mt-1">Feature Engineering (Trigonometric time, Lags), Mô hình OLS/LightGBM, Đánh giá sai số SMAPE, Căn bản Chuỗi cung ứng.</p>
+                        </div>
+                        <div>
+                            <h4 class="text-purple-400 font-semibold">Nâng cao (Chuyên sâu/Thực tế)</h4>
+                            <p class="text-sm text-slate-300 mt-1">PyTorch, LSTM/Transformer, Time-Series Split, Model Quantization (INT8), Dynamic Inventory ROP & Safety Stock.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: CV Orientation -->
+        <section id="cv" class="scroll-mt-20 mb-20">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-textMain mb-4">Định Hướng Viết Hồ Sơ (CV)</h2>
+                <p class="text-textMuted max-w-3xl mx-auto">
+                    Cách "đóng gói" kết quả đồ án thành những dòng ấn tượng nhất trong CV xin việc, nhắm thẳng vào các vị trí Data cao cấp.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-blue-50 rounded-2xl p-6 border-l-4 border-blue-500 relative">
+                    <div class="absolute -top-4 -right-4 text-5xl opacity-20">📄</div>
+                    <h3 class="font-bold text-blue-900 text-lg mb-2">Cho Data Engineer / SC Analyst</h3>
+                    <p class="text-blue-800 text-sm leading-relaxed italic">
+                        "Xây dựng thành công pipeline xử lý dữ liệu lớn (>1 triệu dòng lịch sử bán lẻ) bằng Pandas & NumPy. Thiết kế hệ thống tính năng chuỗi thời gian chuyên sâu (Fourier features, multi-lags). Huấn luyện mô hình LightGBM đạt sai số SMAPE 8.5%. Trực tiếp chuyển đổi kết quả dự báo thành thuật toán quản trị tồn kho động ROP và Safety Stock, giúp giả lập giảm thiểu 15% tỷ lệ cháy hàng."
+                    </p>
+                </div>
+
+                <div class="bg-emerald-50 rounded-2xl p-6 border-l-4 border-emerald-500 relative">
+                    <div class="absolute -top-4 -right-4 text-5xl opacity-20">📄</div>
+                    <h3 class="font-bold text-emerald-900 text-lg mb-2">Cho Machine Learning Engineer</h3>
+                    <p class="text-emerald-800 text-sm leading-relaxed italic">
+                        "Nghiên cứu và triển khai hệ thống dự báo chuỗi thời gian đa bước sử dụng kiến trúc Encoder-Decoder LSTM và Transformer trong PyTorch trên GPU. Áp dụng kỹ thuật Model Quantization INT8 giúp nén kích thước mô hình đi 4 lần và tăng tốc độ suy luận gấp 2.5 lần phục vụ Production. Đạt độ chính xác dự báo vượt trội 12% so với baseline truyền thống."
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 text-center text-sm border-t border-slate-800">
+        <p>Bản phác thảo kế hoạch Đồ án Đề tài 22 - Phát triển dựa trên yêu cầu cấu trúc Web App.</p>
+        <p class="mt-2">Thiết kế không sử dụng SVG/Mermaid theo quy chuẩn.</p>
+    </footer>
+
+    <!-- Logic and Interactivity -->
+    <script>
+        // Data for Interactive Roadmap
+        const roadmapData = [
+            {
+                id: 1,
+                title: "GĐ 1",
+                duration: "Tuần 1-2",
+                name: "Thu Thập & Làm Sạch",
+                desc: "Thiết lập Pipeline dữ liệu chuẩn, tuyệt đối không dùng Random Train-Test Split.",
+                taskA: "Tải dataset. Xử lý Missing values (FFN, Linear). Chuẩn hóa Datetime.",
+                taskB: "Thiết lập môi trường Colab/GPU. Viết pipeline Time-Based Split tránh Data Leakage."
+            },
+            {
+                id: 2,
+                title: "GĐ 2",
+                duration: "Tuần 3-4",
+                name: "EDA & Thống Kê",
+                desc: "Phân tích khám phá dữ liệu (EDA) và chẩn đoán các đặc tính chuỗi thời gian.",
+                taskA: "Phân tích xu hướng tập trung. Vẽ Boxplot tìm Outliers (Q1, Q3, IQR).",
+                taskB: "Kiểm tra tính dừng (ADF Test). Phân rã Trend/Seasonality. Vẽ biểu đồ ACF/PACF."
+            },
+            {
+                id: 3,
+                title: "GĐ 3",
+                duration: "Tuần 5-6",
+                name: "Feature Eng & Baseline",
+                desc: "Trích xuất đặc trưng và chạy mô hình học máy truyền thống làm cột mốc (Baseline).",
+                taskA: "Tạo Time Features, Tọa độ lượng giác (sin/cos cho tuần hoàn), Lags, Rolling Windows.",
+                taskB: "Chạy Baseline Linear Regression. Xây dựng mô hình Tree-based nâng cao (LightGBM/XGBoost)."
+            },
+            {
+                id: 4,
+                title: "GĐ 4",
+                duration: "Tuần 7-9",
+                name: "Deep Learning",
+                desc: "Xây dựng và tối ưu các kiến trúc mạng nơ-ron học sâu phức tạp.",
+                taskA: "Chuẩn bị dữ liệu Scaled. Đo lường Inference Latency so sánh với mô hình ML.",
+                taskB: "Tạo Tensor 3D. Code LSTM/GRU/Transformer trên PyTorch. Tuning Hyperparameters."
+            },
+            {
+                id: 5,
+                title: "GĐ 5",
+                duration: "Tuần 10-11",
+                name: "Tích Hợp Nghiệp Vụ",
+                desc: "Đưa dự báo vào ứng dụng giải quyết bài toán Chuỗi cung ứng và tối ưu hóa.",
+                taskA: "Đánh giá MAE, RMSE, SMAPE. Tính toán Safety Stock (SS) và Reorder Point (ROP) động.",
+                taskB: "Thực hiện Model Quantization (INT8) giảm dung lượng mô hình, tăng tốc độ chạy."
+            },
+            {
+                id: 6,
+                title: "GĐ 6",
+                duration: "Tuần 12",
+                name: "Báo Cáo & Dashboard",
+                desc: "Hoàn thiện tài liệu, tạo báo cáo trực quan và chốt CV.",
+                taskA: "Thiết kế Dashboard trực quan (Matplotlib/Power BI) so sánh dự báo và tồn kho.",
+                taskB: "Viết báo cáo chuẩn khoa học. Tổng hợp thông số kỹ thuật hệ thống."
+            }
+        ];
+
+        // 1. Initialize Roadmap Logic
+        function initRoadmap() {
+            const tabsContainer = document.getElementById('roadmapTabs');
+            const contentContainer = document.getElementById('roadmapContent');
+
+            // Render Tabs
+            roadmapData.forEach((phase, index) => {
+                const isActive = index === 0 ? 'bg-white border-b-2 border-primary text-primary font-bold' : 'text-slate-500 hover:bg-slate-200';
+                
+                const tabHtml = `
+                    <button class="px-6 py-4 whitespace-nowrap focus:outline-none transition-colors ${isActive}" 
+                            data-target="${phase.id}" 
+                            onclick="switchTab(${phase.id}, this)">
+                        <span class="block text-xs uppercase tracking-wider">${phase.duration}</span>
+                        <span class="block text-base">${phase.title}</span>
+                    </button>
+                `;
+                tabsContainer.insertAdjacentHTML('beforeend', tabHtml);
+
+                // Render Content
+                const contentActive = index === 0 ? 'active' : '';
+                const contentHtml = `
+                    <div id="phase-${phase.id}" class="tab-content ${contentActive}">
+                        <h3 class="text-2xl font-bold text-slate-800 mb-2">${phase.name}</h3>
+                        <p class="text-slate-600 mb-6 italic">${phase.desc}</p>
+                        
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-blue-50 rounded-xl p-5 border border-blue-100">
+                                <h4 class="font-bold text-blue-900 mb-2 flex items-center gap-2"><span>👤</span> Thành viên A làm:</h4>
+                                <p class="text-sm text-slate-700">${phase.taskA}</p>
+                            </div>
+                            <div class="bg-emerald-50 rounded-xl p-5 border border-emerald-100">
+                                <h4 class="font-bold text-emerald-900 mb-2 flex items-center gap-2"><span>👤</span> Thành viên B làm:</h4>
+                                <p class="text-sm text-slate-700">${phase.taskB}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                contentContainer.insertAdjacentHTML('beforeend', contentHtml);
+            });
+        }
+
+        // Switch Tab Logic
+        window.switchTab = function(id, btnElement) {
+            // Update buttons
+            const buttons = document.querySelectorAll('#roadmapTabs button');
+            buttons.forEach(btn => {
+                btn.className = "px-6 py-4 whitespace-nowrap focus:outline-none transition-colors text-slate-500 hover:bg-slate-200";
+            });
+            btnElement.className = "px-6 py-4 whitespace-nowrap focus:outline-none transition-colors bg-white border-b-2 border-primary text-primary font-bold";
+
+            // Update content
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+            document.getElementById(`phase-${id}`).classList.add('active');
+        }
+
+        // 2. Initialize Charts (Chart.js)
+        function initCharts() {
+            // Setup common chart config for responsiveness
+            Chart.defaults.maintainAspectRatio = false;
+            Chart.defaults.font.family = "'Segoe UI', 'Roboto', sans-serif";
+
+            // --- Chart 1: Cost Trade-off Line Chart ---
+            const ctxCost = document.getElementById('costTradeoffChart').getContext('2d');
+            new Chart(ctxCost, {
+                type: 'line',
+                data: {
+                    labels: ['Thấp', '', '', 'Tối ưu', '', '', 'Cao'], // Inventory level
+                    datasets: [
+                        {
+                            label: 'Chi phí lưu kho (Holding)',
+                            data: [10, 20, 35, 50, 70, 95, 120],
+                            borderColor: '#3b82f6', // blue
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Chi phí cháy hàng (Stockout)',
+                            data: [130, 90, 60, 40, 25, 15, 10],
+                            borderColor: '#ef4444', // red
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Tổng chi phí (Total Cost)',
+                            data: [140, 110, 95, 90, 95, 110, 130],
+                            borderColor: '#10b981', // emerald
+                            borderWidth: 3,
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            pointBackgroundColor: '#10b981',
+                            pointRadius: [0, 0, 0, 6, 0, 0, 0] // Highlight optimal point
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+                        tooltip: { enabled: false }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Mức độ Tồn kho (Inventory Level)' }, grid: { display: false } },
+                        y: { title: { display: true, text: 'Chi phí ($)' }, grid: { borderDash: [2, 4] }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // --- Chart 2: Skills Radar Chart ---
+            const ctxSkills = document.getElementById('skillsRadarChart').getContext('2d');
+            new Chart(ctxSkills, {
+                type: 'radar',
+                data: {
+                    labels: ['Data Prep & Pandas', 'Thống kê & OLS', 'Feature Engineering', 'Deep Learning & PyTorch', 'Model Tuning', 'Nghiệp vụ Chuỗi Cung Ứng'],
+                    datasets: [
+                        {
+                            label: 'Thành viên A (Data Eng)',
+                            data: [90, 85, 95, 30, 60, 90],
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)', // blue
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'rgba(59, 130, 246, 1)'
+                        },
+                        {
+                            label: 'Thành viên B (DL Eng)',
+                            data: [60, 70, 50, 95, 90, 50],
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)', // emerald
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'rgba(16, 185, 129, 1)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                    },
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(0,0,0,0.1)' },
+                            grid: { color: 'rgba(0,0,0,0.1)' },
+                            pointLabels: {
+                                font: { size: 11 },
+                                callback: function(word) {
+                                    // Wrap labels roughly at 16 chars logic 
+                                    let result = [];
+                                    let currentLine = '';
+                                    word.split(' ').forEach(w => {
+                                        if ((currentLine + w).length > 16) {
+                                            result.push(currentLine);
+                                            currentLine = w + ' ';
+                                        } else {
+                                            currentLine += w + ' ';
+                                        }
+                                    });
+                                    result.push(currentLine.trim());
+                                    return result;
+                                }
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            ticks: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Run initializations on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initRoadmap();
+            initCharts();
+        });
+    </script>
+</body>
+</html>
